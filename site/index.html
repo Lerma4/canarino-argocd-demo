@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canarino</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07111f;
+        --panel: rgba(13, 24, 42, 0.88);
+        --border: rgba(132, 204, 255, 0.16);
+        --accent: #facc15;
+        --accent-2: #38bdf8;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --ok: #4ade80;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        background:
+          radial-gradient(circle at top, rgba(56, 189, 248, 0.18), transparent 35%),
+          linear-gradient(180deg, #020617 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 64px;
+      }
+
+      .hero,
+      .grid article {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 20px 60px rgba(2, 6, 23, 0.4);
+      }
+
+      .hero {
+        padding: 32px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(250, 204, 21, 0.12);
+        color: var(--accent);
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 18px 0 12px;
+        font-size: clamp(38px, 9vw, 72px);
+        line-height: 0.95;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .stats,
+      .grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .grid {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        margin-top: 24px;
+      }
+
+      .stat,
+      .grid article {
+        padding: 20px;
+      }
+
+      .label {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .value {
+        display: block;
+        margin-top: 10px;
+        font-size: 28px;
+        font-weight: 700;
+      }
+
+      .dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 8px;
+        border-radius: 999px;
+        background: var(--ok);
+        box-shadow: 0 0 12px rgba(74, 222, 128, 0.8);
+      }
+
+      code {
+        color: var(--accent-2);
+        font-family: ui-monospace, SFMono-Regular, monospace;
+      }
+
+      @media (max-width: 640px) {
+        .hero,
+        .stat,
+        .grid article {
+          border-radius: 20px;
+        }
+
+        main {
+          padding-top: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <span class="eyebrow"><span class="dot"></span>Canary release ready</span>
+        <h1>Canarino</h1>
+        <p>
+          Interfaccia statica minimale per validare pipeline GitHub, deploy Kubernetes e
+          rollout progressivi con Argo CD.
+        </p>
+
+        <div class="stats">
+          <div class="stat">
+            <span class="label">Versione</span>
+            <span class="value" id="version">0.1.0</span>
+          </div>
+          <div class="stat">
+            <span class="label">Canale</span>
+            <span class="value" id="channel">canary</span>
+          </div>
+          <div class="stat">
+            <span class="label">Stack</span>
+            <span class="value">Argo CD</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article>
+          <span class="label">Health check</span>
+          <p>Endpoint pronto su <code>/healthz</code> per readiness e liveness probe.</p>
+        </article>
+        <article>
+          <span class="label">Container</span>
+          <p>Immagine `nginx` unprivileged, semplice da buildare e pubblicare su GHCR.</p>
+        </article>
+        <article>
+          <span class="label">Rollout</span>
+          <p>Strategia canary con pause progressive per osservare il rilascio.</p>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      fetch('./meta.json')
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (meta) {
+          document.getElementById('version').textContent = meta.version;
+          document.getElementById('channel').textContent = meta.channel;
+        })
+        .catch(function () {
+          // Leave defaults in place if metadata is unavailable.
+        });
+    </script>
+  </body>
+  </html>

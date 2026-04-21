@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: ghcr.io/lerma4/canarino-argocd-demo
+    newName: ghcr.io/lerma4/canarino-argocd-demo
+    newTag: main
