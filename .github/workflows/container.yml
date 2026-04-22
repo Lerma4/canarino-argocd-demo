@@ -12,9 +12,16 @@ permissions:
   contents: read
   packages: write
 
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/canarino-argocd-demo
+  GITOPS_REPOSITORY: ${{ github.repository_owner }}/k3s-argocd-gitops
+  GITOPS_OVERLAY_FILE: apps/canarino/overlays/canary/kustomization.yaml
+
 jobs:
   container:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.image_tag.outputs.value }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,15 +33,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Compute image tag
+        id: image_tag
+        run: printf 'value=sha-%s\n' "${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/canarino-argocd-demo
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=main,enable={{is_default_branch}}
             type=ref,event=tag
-            type=sha
+            type=raw,value=${{ steps.image_tag.outputs.value }}
 
       - name: Build and push image
         uses: docker/build-push-action@v6
@@ -43,3 +54,38 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  update-gitops:
+    needs: container
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GITOPS_REPOSITORY }}
+          token: ${{ secrets.GITOPS_REPO_TOKEN }}
+          path: gitops
+
+      - name: Update deployed image tag
+        env:
+          IMAGE_TAG: ${{ needs.container.outputs.image_tag }}
+        run: |
+          perl -0pi -e "s/\\bnewTag: .*/newTag: ${IMAGE_TAG}/" "gitops/${GITOPS_OVERLAY_FILE}"
+          grep -n "newTag:" "gitops/${GITOPS_OVERLAY_FILE}"
+
+      - name: Commit GitOps update
+        working-directory: gitops
+        env:
+          IMAGE_TAG: ${{ needs.container.outputs.image_tag }}
+        run: |
+          if git diff --quiet -- "${GITOPS_OVERLAY_FILE}"; then
+            echo "GitOps overlay already points to ${IMAGE_TAG}"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${GITOPS_OVERLAY_FILE}"
+          git commit -m "Update canarino image to ${IMAGE_TAG}"
+          git push
